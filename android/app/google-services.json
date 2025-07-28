@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "775487623656",
+    "project_id": "daka-izleme",
+    "storage_bucket": "daka-izleme.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:775487623656:android:2a5075a1faa835bd21945d",
+        "android_client_info": {
+          "package_name": "com.example.dakaizleme"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDh_Ke9_iT4XL6vfvQut4q7Ucs-rq2NXF8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
