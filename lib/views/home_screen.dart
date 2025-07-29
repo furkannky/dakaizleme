@@ -67,18 +67,51 @@ class _HomeScreenState extends State<HomeScreen> {
     'Teknik Destek',
   ];
 
+  // Destek türleri ve renkleri - çeşitli yazım varyasyonlarını destekleyecek şekilde güncellendi
   final Map<String, Color> _markerColors = {
-    'Cazibe Merkezleri Destekleme Programı':
-        Colors.purple, // Fixed the key to match the data
-    'Çalışan ve Üreten Gençler Programı': Colors.blue,
-    'Doğrudan Faaliyet Desteği': Colors.green,
-    'Finansman Desteği': Colors.orange,
-    'Fizibilite Desteği': Colors.teal,
-    'Proje Teklif Çağrısı': Colors.red,
-    'Güdümlü Proje Desteği': Colors.pinkAccent,
-    'Sosyal Gelişmeyi Destekleme Programı': Colors.indigo,
-    'Teknik Destek': Colors.amber,
-    'Diğer': Colors.grey, // Destek türü belirtilmeyenler için
+    // Cazibe Merkezleri varyasyonları
+    'cazibe merkezleri destekleme programı': Colors.purple,
+    'cazibe merkezi destekleme programı': Colors.purple,
+    'cazibe merkezleri': Colors.purple,
+    'cazibe merkezi': Colors.purple,
+    'cazibe': Colors.purple,
+    
+    // Çalışan ve Üreten Gençler Programı varyasyonları
+    'çalışan ve üreten gençler programı': Colors.blue,
+    'çalışan gençler programı': Colors.blue,
+    'üreten gençler': Colors.blue,
+    'gençler programı': Colors.blue,
+    
+    // Diğer destek türleri
+    'doğrudan faaliyet desteği': Colors.green,
+    'faaliyet desteği': Colors.green,
+    'doğrudan destek': Colors.green,
+    
+    'finansman desteği': Colors.orange,
+    'finansal destek': Colors.orange,
+    
+    'fizibilite desteği': Colors.teal,
+    'fizibilite': Colors.teal,
+    
+    'proje teklif çağrısı': Colors.red,
+    'proje çağrısı': Colors.red,
+    'teklif çağrısı': Colors.red,
+    'proje teklif': Colors.red,
+    
+    'güdümlü proje desteği': Colors.pinkAccent,
+    'güdümlü proje': Colors.pinkAccent,
+    'güdümlü destek': Colors.pinkAccent,
+    
+    'sosyal gelişmeyi destekleme programı': Colors.indigo,
+    'sosyal gelişme programı': Colors.indigo,
+    'sosyal destek programı': Colors.indigo,
+    'sosyal gelişme': Colors.indigo,
+    
+    'teknik destek': Colors.amber,
+    'teknik': Colors.amber,
+    
+    // Varsayılan
+    'diğer': Colors.grey,
   };
 
   bool _isLegendExpanded = false;
@@ -175,97 +208,125 @@ class _HomeScreenState extends State<HomeScreen> {
   // Belirli bir şehre ait projeleri haritada gösteren metod
   // Bu metod sadece il poligonuna tıklandığında çağrılır ve destek türü filtresini dikkate almaz
   Future<void> _loadMarkersForCity(String cityName) async {
-    _markers.clear(); // Önceki markerları temizle
+    try {
+      if (cityName.isEmpty) return;
+      
+      // Clear previous markers
+      setState(() {
+        _markers.clear();
+      });
 
-    // Sadece şehre göre filtrele (destek türü filtresini dikkate alma)
-    var filteredProjects =
-        _allAjansDestekleri
-            .where(
-              (destek) => destek.il.toLowerCase() == cityName.toLowerCase(),
-            )
-            .toList();
+      // Check if projects are loaded
+      if (_allAjansDestekleri == null || _allAjansDestekleri.isEmpty) {
+        debugPrint('UYARI: Proje verileri yüklenmedi veya boş');
+        return;
+      }
 
-    // Eğer destek türü filtresi seçiliyse, şehir seçimini iptal et
-    if (_selectedSupportType != null && _selectedSupportType != 'Tümü') {
-      _selectedSupportType = null;
-      setState(() {}); // UI'ı güncelle
-    }
+      // Filter projects by city name (case-insensitive)
+      final normalizedCityName = cityName.trim().toLowerCase();
+      final filteredProjects = _allAjansDestekleri.where(
+        (destek) => destek.il.trim().toLowerCase() == normalizedCityName,
+      ).toList();
 
-    for (final destek in filteredProjects) {
-      if (destek.latitude != null && destek.longitude != null) {
-        _markers.add(
-          Marker(
-            markerId: MarkerId(destek.id),
-            position: LatLng(destek.latitude!, destek.longitude!),
-            infoWindow: InfoWindow(
-              title: destek.projeAdi,
-              snippet: '${destek.destekTuru} - ${destek.ilce}, ${destek.il}',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) =>
+      debugPrint('$cityName için ${filteredProjects.length} proje bulundu');
+
+      // Reset support type filter if active
+      if (_selectedSupportType != null && _selectedSupportType != 'Tümü') {
+        setState(() {
+          _selectedSupportType = null;
+        });
+      }
+
+      // Add markers for filtered projects
+      for (final destek in filteredProjects) {
+        try {
+          if (destek.latitude != null && destek.longitude != null) {
+            _markers.add(
+              Marker(
+                markerId: MarkerId(destek.id),
+                position: LatLng(destek.latitude!, destek.longitude!),
+                infoWindow: InfoWindow(
+                  title: destek.projeAdi,
+                  snippet: '${destek.destekTuru} - ${destek.ilce}, ${destek.il}',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => 
                             AjansDestekDetailScreen(ajansDestekId: destek.id),
-                  ),
-                );
-              },
-            ),
-            icon: _getMarkerHueForSupportType(destek.destekTuru),
+                      ),
+                    );
+                  },
+                ),
+                icon: _getMarkerHueForSupportType(destek.destekTuru),
+              ),
+            );
+          }
+        } catch (e) {
+          debugPrint('Hata: ${destek.id} ID li proje için marker oluşturulamadı: $e');
+        }
+      }
+
+      // Update UI with new markers
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('_loadMarkersForCity hatası: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$cityName için projeler yüklenirken hata oluştu'),
+            duration: Duration(seconds: 3),
           ),
         );
       }
     }
-    setState(() {}); // Marker setini güncelledikten sonra UI'ı yenile
   }
 
   // Destek türüne göre filtreleme yapan metod
   void _filterBySupportType(String? supportType) {
-    debugPrint('Filtreleme başlıyor. Seçilen destek türü: "$supportType"');
+    debugPrint('\n=== DESTEK TÜRÜNE GÖRE FİLTRELEME BAŞLIYOR ===');
+    debugPrint('Seçilen destek türü: "$supportType"');
+    
     _selectedSupportType = supportType == 'Tümü' ? null : supportType;
-    _markers.clear(); // Önceki markerları temizle
+    _markers.clear();
 
-    // Eğer bir destek türü seçildiyse, tüm projeler arasından filtrele
     if (_selectedSupportType != null) {
       // Tüm destek türlerini ve sayılarını logla
       final supportTypeCounts = <String, int>{};
       final allSupportTypes = <String>{};
 
       for (var destek in _allAjansDestekleri) {
-        supportTypeCounts[destek.destekTuru] =
-            (supportTypeCounts[destek.destekTuru] ?? 0) + 1;
+        supportTypeCounts[destek.destekTuru] = (supportTypeCounts[destek.destekTuru] ?? 0) + 1;
         allSupportTypes.add(destek.destekTuru);
       }
 
-      debugPrint('Tüm benzersiz destek türleri:');
+      debugPrint('\nTÜM BENZERSİZ DESTEK TÜRLERİ:');
       allSupportTypes.toList()
         ..sort()
-        ..forEach((type) => debugPrint(' - "$type"'));
-      debugPrint('Destek türü sayıları: $supportTypeCounts');
+        ..forEach((type) => debugPrint(' - "$type" (${supportTypeCounts[type]})'));
 
-      // Normalize the selected support type for comparison
-      final normalizedSelectedType = _normalizeSupportType(
-        _selectedSupportType!,
-      );
-      debugPrint(
-        'Aranan normalleştirilmiş destek türü: "$normalizedSelectedType"',
-      );
+      final normalizedSelectedType = _normalizeSupportType(_selectedSupportType!);
+      debugPrint('\nARANAN NORMALİZE EDİLMİŞ DESTEK TÜRÜ: "$normalizedSelectedType"');
 
-      // Tüm projeleri filtrele (case-insensitive ve trimli karşılaştırma)
       var filteredProjects = <AjansDestek>[];
       var matchCount = 0;
 
+      debugPrint('\nEŞLEŞME ARANIYOR...');
       for (var destek in _allAjansDestekleri) {
         final normalizedDestekTuru = _normalizeSupportType(destek.destekTuru);
-        final matches = normalizedDestekTuru == normalizedSelectedType;
-
-        if (matches) {
+        final exactMatch = normalizedDestekTuru == normalizedSelectedType;
+        final partialMatch = normalizedDestekTuru.contains(normalizedSelectedType) || 
+                           normalizedSelectedType.contains(normalizedDestekTuru);
+        
+        if (exactMatch || partialMatch) {
           filteredProjects.add(destek);
           matchCount++;
-          debugPrint('Eşleşme bulundu (${matchCount}):');
-          debugPrint('  - Aranan: "${_selectedSupportType}"');
-          debugPrint('  - Verideki: "${destek.destekTuru}"');
-          debugPrint('  - Normalize edilmiş: "$normalizedDestekTuru"');
+          debugPrint('\n✅ EŞLEŞME BULUNDU (${matchCount}):');
+          debugPrint('   - Aranan: "$_selectedSupportType"');
+          debugPrint('   - Verideki: "${destek.destekTuru}"');
+          debugPrint('   - Normalize edilmiş: "$normalizedDestekTuru"');
         }
       }
 
@@ -508,47 +569,146 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Destek türüne göre marker rengini döndüren metod
-  // Normalize the support type string for comparison
+  // Destek türünü normalleştiren metod
+  // - Tüm harfleri küçük yapar
+  // - Baştaki ve sondaki boşlukları kaldırır
+  // - Çoklu boşlukları tek boşluğa indirger
+  // - Türkçe karakterleri İngilizce karşılıkları ile değiştirir
+  // - Yaygın varyasyonları standartlaştırır
   String _normalizeSupportType(String supportType) {
-    // Trim whitespace and normalize case
-    return supportType.trim().toLowerCase();
+    if (supportType.isEmpty) return '';
+    
+    // Önce temizleme
+    String normalized = supportType
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), ' '); // Çoklu boşlukları tek boşluğa indirge
+    
+    // Türkçe karakterleri değiştir
+    normalized = normalized
+        .replaceAll('ı', 'i')
+        .replaceAll('ğ', 'g')
+        .replaceAll('ü', 'u')
+        .replaceAll('ş', 's')
+        .replaceAll('ö', 'o')
+        .replaceAll('ç', 'c');
+    
+    // Yaygın varyasyonları standartlaştır
+    final variations = <String, String>{
+      'cazibe merkez': 'cazibe merkezleri',
+      'cazibe merkezi': 'cazibe merkezleri',
+      'cazibe merkezleri destekleme programi': 'cazibe merkezleri',
+      'cazibe merkezleri destek programi': 'cazibe merkezleri',
+      'cazibe merkezleri programi': 'cazibe merkezleri',
+      'proje teklif cagrisi': 'proje teklif cagrisi',
+      'proje teklif cagri': 'proje teklif cagrisi',
+      'ptc': 'proje teklif cagrisi',
+    };
+    
+    // Varyasyon kontrolü yap
+    for (final entry in variations.entries) {
+      if (normalized.contains(entry.key)) {
+        normalized = entry.value;
+        break;
+      }
+    }
+    
+    debugPrint('Normalize edilen destek türü: "$supportType" -> "$normalized"');
+    return normalized;
   }
 
   BitmapDescriptor _getMarkerHueForSupportType(String supportType) {
+    if (supportType.isEmpty) {
+      debugPrint('UYARI: Boş destek türü alındı, varsayılan renk kullanılıyor');
+      return BitmapDescriptor.defaultMarker;
+    }
+
     // Log the original support type for debugging
-    debugPrint('Original support type: "$supportType"');
+    debugPrint('\n=== RENK EŞLEŞTİRME BAŞLIYOR ===');
+    debugPrint('Orijinal destek türü: "$supportType"');
 
     // Normalize the input support type
     final normalizedType = _normalizeSupportType(supportType);
+    debugPrint('Normalize edilmiş destek türü: "$normalizedType"');
 
+    // Özel eşleştirmeler - öncelikle kontrol edilecek
+    final specialMappings = <String, Color>{
+      'cazibe merkezleri': Colors.purple,
+      'cazibe merkez': Colors.purple,
+      'cazibe merkezi': Colors.purple,
+      'proje teklif cagrisi': Colors.red,
+      'proje teklif cagri': Colors.red,
+      'ptc': Colors.red,
+      'güdümlü proje': Colors.pinkAccent,
+      'sosyal gelişme': Colors.indigo,
+      'teknik destek': Colors.amber,
+    };
+
+    // Özel eşleştirmeleri kontrol et
+    for (final entry in specialMappings.entries) {
+      if (normalizedType.contains(entry.key)) {
+        debugPrint('✅ ÖZEL EŞLEŞME: "$supportType" -> "${entry.key}" -> ${entry.value}');
+        try {
+          final hsvColor = HSVColor.fromColor(entry.value);
+          return BitmapDescriptor.defaultMarkerWithHue(hsvColor.hue);
+        } catch (e) {
+          debugPrint('HATA: Özel renk dönüşümü başarısız: $e');
+          return BitmapDescriptor.defaultMarker;
+        }
+      }
+    }
+
+    // Eğer özel eşleşme yoksa, normal eşleştirme yap
+    debugPrint('Özel eşleşme bulunamadı, normal eşleştirme yapılıyor...');
+    
     // Try to find a matching color (case-insensitive and trimmed)
     String? matchedKey;
     Color? color;
 
+    // Önce tam eşleşme kontrolü
     for (var entry in _markerColors.entries) {
-      if (_normalizeSupportType(entry.key) == normalizedType) {
+      final normalizedEntryKey = _normalizeSupportType(entry.key);
+      debugPrint('  Kontrol edilen anahtar: "${entry.key}" -> "$normalizedEntryKey"');
+      
+      if (normalizedEntryKey == normalizedType) {
         matchedKey = entry.key;
         color = entry.value;
+        debugPrint('  ✅ Tam eşleşme bulundu: "$matchedKey" -> $color');
         break;
+      }
+    }
+
+    // Eğer tam eşleşme yoksa, kısmi eşleşme kontrolü
+    if (color == null) {
+      debugPrint('Tam eşleşme bulunamadı, kısmi eşleşme aranıyor...');
+      for (var entry in _markerColors.entries) {
+        final normalizedEntryKey = _normalizeSupportType(entry.key);
+        if (normalizedType.contains(normalizedEntryKey) || 
+            normalizedEntryKey.contains(normalizedType)) {
+          matchedKey = entry.key;
+          color = entry.value;
+          debugPrint('  ✅ Kısmi eşleşme bulundu: "$matchedKey" -> $color');
+          break;
+        }
       }
     }
 
     // If no match found, use the default 'Diğer' color
     if (color == null) {
-      debugPrint(
-        'No color match found for support type: "$supportType". Using default color.',
-      );
-      color = _markerColors['Diğer']!;
-    } else {
-      debugPrint(
-        'Matched support type: "$supportType" to color: $color with key: "$matchedKey"',
-      );
+      debugPrint('UYARI: "$supportType" için eşleşen renk bulunamadı. Varsayılan renk kullanılıyor.');
+      color = _markerColors['diğer'] ?? Colors.grey;
     }
 
+    debugPrint('Sonuç: "$supportType" -> "$matchedKey" -> $color');
+
     // Convert color to HSV and get the hue value (0-360)
-    final hsvColor = HSVColor.fromColor(color);
-    return BitmapDescriptor.defaultMarkerWithHue(hsvColor.hue);
+    try {
+      final hsvColor = HSVColor.fromColor(color);
+      return BitmapDescriptor.defaultMarkerWithHue(hsvColor.hue);
+    } catch (e) {
+      debugPrint('HATA: Renk dönüşümü başarısız: $e');
+      return BitmapDescriptor.defaultMarker;
+    }
   }
 
   @override

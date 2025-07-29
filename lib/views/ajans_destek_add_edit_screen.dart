@@ -509,13 +509,13 @@ class _AjansDestekAddEditScreenState extends State<AjansDestekAddEditScreen> {
                       const SizedBox(height: 12),
                       _buildTextFormField(
                         controller: _sozlesmeButcesiController,
-                        labelText: 'Sözleşme Bütçesi (TL) (Opsiyonel)',
+                        labelText: 'Nihai Bütçe (TL) (Opsiyonel)',
                         keyboardType: TextInputType.number,
                       ),
                       const SizedBox(height: 12),
                       _buildTextFormField(
                         controller: _sozlesmeDestekTutariController,
-                        labelText: 'Sözleşme Destek Tutarı (TL) (Opsiyonel)',
+                        labelText: 'Nihai Hibe Tutarı (TL) (Opsiyonel)',
                         keyboardType: TextInputType.number,
                       ),
                       const SizedBox(height: 12),
