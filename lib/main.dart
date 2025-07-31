@@ -1,6 +1,5 @@
 // lib/main.dart
 import 'package:dakaizleme/views/auth_screen.dart';
-import 'package:dakaizleme/views/testmap.dart';
 import 'package:dakaizleme/views/home_screen.dart'; 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -10,8 +9,6 @@ import 'services/auth_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'models/user_model.dart';
-import 'package:dakaizleme/views/project_list_screen.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -19,7 +16,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  await initializeDateFormatting('tr', null);
+  await initializeDateFormatting('tr_TR', null);
 
   runApp(const MyApp());
 }

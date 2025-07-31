@@ -56,6 +56,9 @@ dependencies:
   flutter_staggered_animations: ^1.1.1
   carousel_slider: ^5.1.1
   geolocator: ^14.0.2
+  pdf: ^3.11.3
+  share_plus: ^11.0.0
+  open_file: ^3.5.10
 
 
 dev_dependencies:
@@ -87,7 +90,7 @@ flutter:
     - assets/geo/tr.json
     - assets/geo/local.json
     - assets/dakaappimages/
-  
+    - assets/fonts/NotoSans-Regular.ttf
 
   #   - images/a_dot_ham.jpeg
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../services/ajans_destek_service.dart';
@@ -6,6 +7,9 @@ import '../models/ajans_destek.dart';
 import 'ajans_destek_add_edit_screen.dart';
 import '../models/user_model.dart';
 import '../utils/role_helper.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../services/pdf_service.dart';
 
 class AjansDestekDetailScreen extends StatefulWidget {
   final String ajansDestekId;
@@ -97,6 +101,133 @@ class _AjansDestekDetailScreenState extends State<AjansDestekDetailScreen>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         margin: const EdgeInsets.all(16),
       ),
+    );
+  }
+
+  Future<void> _downloadAsPdf() async {
+    if (_ajansDestek == null) return;
+
+    try {
+      // İzin durumlarını kontrol et
+      bool isStorageGranted = false;
+      
+      // Android 10 (API 29) ve üzeri için MANAGE_EXTERNAL_STORAGE izni gerekir
+      if (await Permission.storage.request().isGranted) {
+        isStorageGranted = true;
+      } else if (await Permission.manageExternalStorage.request().isGranted) {
+        isStorageGranted = true;
+      }
+
+      if (!isStorageGranted) {
+        if (!mounted) return;
+        _showSnackBar('Dosya indirmek için depolama izni gerekli', isError: true);
+        await openAppSettings(); // Kullanıcıyı ayarlara yönlendir
+        return;
+      }
+
+      // Yükleme göstergesini göster
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // PDF oluştur
+      final pdfFile = await PdfService.generateProjectPdf(_ajansDestek!.toFirestore());
+
+      // Yükleme göstergesini kapat
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      // PDF'i açma veya paylaşma seçeneklerini göster
+      showModalBottomSheet(
+        context: context,
+        builder: (context) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.open_in_browser),
+                title: const Text('PDF\'i Aç'),
+                onTap: () {
+                  Navigator.pop(context);
+                  PdfService.openFile(pdfFile);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share),
+                title: const Text('Paylaş'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Share.shareXFiles([XFile(pdfFile.path)], text: 'Proje Detayları');
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Yükleme göstergesini kapat
+      _showSnackBar('PDF oluşturulurken hata: $e', isError: true);
+    }
+  }
+
+  List<Widget> _buildAppBarActions() {
+    final appUser = Provider.of<AppUser?>(context);
+    final bool isAdmin = RoleHelper.isAdmin(appUser?.role);
+    final bool canEdit = RoleHelper.canEdit(appUser?.role);
+    final bool canDelete = RoleHelper.canDelete(appUser?.role);
+
+    return [
+      IconButton(
+        icon: const Icon(Icons.download),
+        tooltip: 'PDF Olarak İndir',
+        onPressed: _downloadAsPdf,
+      ),
+      if (canEdit)
+        IconButton(
+          icon: const Icon(Icons.edit_rounded),
+          tooltip: 'Düzenle',
+          onPressed: () {
+            if (_ajansDestek != null) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => AjansDestekAddEditScreen(
+                    ajansDestek: _ajansDestek,
+                  ),
+                ),
+              ).then((_) {
+                _loadAjansDestekDetails();
+              });
+            }
+          },
+        ),
+      if (canDelete)
+        IconButton(
+          icon: const Icon(Icons.delete_rounded),
+          tooltip: 'Sil',
+          onPressed: () => _confirmAndDelete(context, Theme.of(context).colorScheme, Theme.of(context).textTheme),
+        ),
+    ];
+  }
+
+  AppBar _buildAppBar() {
+    return AppBar(
+      title: Text(
+        'Proje Detayı',
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.onPrimary,
+        ),
+      ),
+      backgroundColor: const Color.fromARGB(255, 8, 49, 70),
+      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      elevation: 4,
+      centerTitle: true,
+      actions: _buildAppBarActions(),
     );
   }
 
@@ -199,46 +330,7 @@ class _AjansDestekDetailScreenState extends State<AjansDestekDetailScreen>
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(
-          'Proje Detayı',
-          style: textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onPrimary,
-          ),
-        ),
-        backgroundColor: const Color.fromARGB(255, 8, 49, 70),
-        foregroundColor: colorScheme.onPrimary,
-        elevation: 4,
-        centerTitle: true,
-        actions: [
-          if (canEdit)
-            IconButton(
-              icon: const Icon(Icons.edit_rounded),
-              tooltip: 'Düzenle',
-              onPressed: () {
-                if (_ajansDestek != null) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => AjansDestekAddEditScreen(
-                        ajansDestek: _ajansDestek,
-                      ),
-                    ),
-                  ).then((_) {
-                    // Refresh the details after editing
-                    _loadAjansDestekDetails();
-                  });
-                }
-              },
-            ),
-          if (canDelete)
-            IconButton(
-              icon: const Icon(Icons.delete_rounded),
-              tooltip: 'Sil',
-              onPressed: () => _confirmAndDelete(context, colorScheme, textTheme),
-            ),
-        ],
-      ),
+      appBar: _buildAppBar(),
       body: AnimatedBuilder(
         animation: _gradientAnimation,
         builder: (context, child) {
