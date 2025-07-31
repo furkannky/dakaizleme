@@ -86,9 +86,8 @@ flutter:
     - assets/
     - assets/geo/tr.json
     - assets/geo/local.json
-    - assets/dakaappimages/
 
-  #   - images/a_dot_ham.jpeg
+    - assets/dakaappimages/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
