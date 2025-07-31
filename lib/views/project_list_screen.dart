@@ -1,4 +1,6 @@
 // lib/views/project_list_screen.dart
+import 'package:dakaizleme/models/user_model.dart';
+import 'package:dakaizleme/utils/role_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:dakaizleme/views/ajans_destek_add_edit_screen.dart';
 import 'package:dakaizleme/views/ajans_destek_detail_screen.dart';
@@ -7,6 +9,7 @@ import 'package:dakaizleme/services/ajans_destek_service.dart';
 import 'package:dakaizleme/views/home_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:provider/provider.dart';
 
 class ProjectListScreen extends StatefulWidget {
   const ProjectListScreen({super.key});
@@ -41,21 +44,33 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
 
   Future<void> _fetchFilterOptions() async {
     try {
-      final statuses = await _ajansDestekService.getDistinctFieldValues('projeDurumu');
-      final mdpYillari = await _ajansDestekService.getDistinctFieldValues('yil');
-      final destekTurleri = await _ajansDestekService.getDistinctFieldValues('destekTuru');
+      final statuses = await _ajansDestekService.getDistinctFieldValues(
+        'projeDurumu',
+      );
+      final mdpYillari = await _ajansDestekService.getDistinctFieldValues(
+        'yil',
+      );
+      final destekTurleri = await _ajansDestekService.getDistinctFieldValues(
+        'destekTuru',
+      );
       final iller = await _ajansDestekService.getDistinctFieldValues('il');
 
-      setState(() {
-        _statusOptions = statuses;
-        _yilOptions = mdpYillari;
-        _destekTuruOptions = destekTurleri;
-        _ilOptions = iller;
-      });
+      if (mounted) {
+        setState(() {
+          _statusOptions = statuses;
+          _yilOptions = mdpYillari;
+          _destekTuruOptions = destekTurleri;
+          _ilOptions = iller;
+        });
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Filtre seçenekleri yüklenirken hata oluştu: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Filtre seçenekleri yüklenirken hata oluştu: $e'),
+          ),
+        );
+      }
     }
   }
 
@@ -190,7 +205,10 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: colorScheme.primary,
                           foregroundColor: colorScheme.onPrimary,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -241,7 +259,9 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+                borderSide: BorderSide(
+                  color: colorScheme.outline.withOpacity(0.5),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -249,11 +269,16 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
               ),
               filled: true,
               fillColor: colorScheme.surfaceVariant.withOpacity(0.3),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             hint: Text(
               'Tümü',
-              style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant.withOpacity(0.7)),
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ),
             ),
             items: [
               DropdownMenuItem<String>(
@@ -276,6 +301,8 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appUser = Provider.of<AppUser?>(context);
+    final bool isAdmin = RoleHelper.isAdmin(appUser?.role);
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final TextTheme textTheme = Theme.of(context).textTheme;
 
@@ -304,9 +331,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
             tooltip: 'Genel Harita Görünümüne Geç',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const HomeScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
               );
             },
           ),
@@ -330,17 +355,12 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                 filled: true,
                 fillColor: colorScheme.surface,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(
-                    12,
-                  ),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: colorScheme.primary,
-                    width: 2,
-                  ),
+                  borderSide: BorderSide(color: colorScheme.primary, width: 2),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -363,7 +383,10 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
           ),
           // Aktif filtre ve sıralama göstergeleri
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
             child: Wrap(
               spacing: 8.0,
               runSpacing: 4.0,
@@ -470,21 +493,21 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                   final allProjects = snapshot.data!;
                   final filteredProjects =
                       allProjects.where((project) {
-                    return project.projeAdi.toLowerCase().contains(
-                                _searchQuery,
-                              ) ||
-                              project.referansNo.toLowerCase().contains(
-                                _searchQuery,
-                              ) ||
-                              project.yararlaniciAdi.toLowerCase().contains(
-                                _searchQuery,
-                              ) ||
-                              project.il.toLowerCase().contains(_searchQuery) ||
-                              project.ilce.toLowerCase().contains(_searchQuery) ||
-                              project.destekTuru.toLowerCase().contains(
-                                _searchQuery,
-                              );
-                  }).toList();
+                        return project.projeAdi.toLowerCase().contains(
+                              _searchQuery,
+                            ) ||
+                            project.referansNo.toLowerCase().contains(
+                              _searchQuery,
+                            ) ||
+                            project.yararlaniciAdi.toLowerCase().contains(
+                              _searchQuery,
+                            ) ||
+                            project.il.toLowerCase().contains(_searchQuery) ||
+                            project.ilce.toLowerCase().contains(_searchQuery) ||
+                            project.destekTuru.toLowerCase().contains(
+                              _searchQuery,
+                            );
+                      }).toList();
 
                   return Text(
                     'Gösterilen Proje Sayısı: ${filteredProjects.length}',
@@ -569,21 +592,21 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                 final allProjects = snapshot.data!;
                 final filteredProjects =
                     allProjects.where((project) {
-                  return project.projeAdi.toLowerCase().contains(
-                                _searchQuery,
-                              ) ||
-                              project.referansNo.toLowerCase().contains(
-                                _searchQuery,
-                              ) ||
-                              project.yararlaniciAdi.toLowerCase().contains(
-                                _searchQuery,
-                              ) ||
-                              project.il.toLowerCase().contains(_searchQuery) ||
-                              project.ilce.toLowerCase().contains(_searchQuery) ||
-                              project.destekTuru.toLowerCase().contains(
-                                _searchQuery,
-                              );
-                }).toList();
+                      return project.projeAdi.toLowerCase().contains(
+                            _searchQuery,
+                          ) ||
+                          project.referansNo.toLowerCase().contains(
+                            _searchQuery,
+                          ) ||
+                          project.yararlaniciAdi.toLowerCase().contains(
+                            _searchQuery,
+                          ) ||
+                          project.il.toLowerCase().contains(_searchQuery) ||
+                          project.ilce.toLowerCase().contains(_searchQuery) ||
+                          project.destekTuru.toLowerCase().contains(
+                            _searchQuery,
+                          );
+                    }).toList();
 
                 if (filteredProjects.isEmpty && _searchQuery.isNotEmpty) {
                   return Center(
@@ -624,9 +647,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                       final project = filteredProjects[index];
                       return AnimationConfiguration.staggeredList(
                         position: index,
-                        duration: const Duration(
-                          milliseconds: 375,
-                        ),
+                        duration: const Duration(milliseconds: 375),
                         child: SlideAnimation(
                           verticalOffset: 50.0,
                           child: FadeInAnimation(
@@ -647,32 +668,29 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context)
-              .push(
-                MaterialPageRoute(
-                  builder: (context) => const AjansDestekAddEditScreen(),
-                ),
-              )
-              .then(
-                (_) => setState(() {
-                  _fetchFilterOptions(); // Yeni proje eklendikten sonra filtre seçeneklerini yenile
-                }),
-              );
-        },
-        backgroundColor: colorScheme.secondary,
-        foregroundColor: colorScheme.onSecondary,
-        elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Icon(Icons.add_rounded, size: 30),
-      ),
+      floatingActionButton: isAdmin
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const AjansDestekAddEditScreen(),
+                  ),
+                );
+              },
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              tooltip: 'Yeni Proje Ekle',
+              child: const Icon(Icons.add_rounded, size: 30),
+            )
+          : null,
     );
   }
 
-  Widget _buildFilterChip(String label, VoidCallback onDelete, ColorScheme colorScheme) {
+  Widget _buildFilterChip(
+    String label,
+    VoidCallback onDelete,
+    ColorScheme colorScheme,
+  ) {
     return Chip(
       label: Text(
         label,
@@ -749,21 +767,18 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
     }
 
     return Card(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 0,
-        vertical: 8,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
       elevation: 6,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: colorScheme.surface,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => AjansDestekDetailScreen(ajansDestekId: project.id),
+              builder:
+                  (context) =>
+                      AjansDestekDetailScreen(ajansDestekId: project.id),
             ),
           );
         },
@@ -790,37 +805,43 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: project.imageUrl != null && project.imageUrl!.isNotEmpty
-                        ? Image.network(
-                            project.imageUrl!,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (
-                              context,
-                              child,
-                              loadingProgress,
-                            ) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
-                                  color: colorScheme.primary,
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) => Icon(
-                              Icons.broken_image_rounded,
+                    child:
+                        project.imageUrl != null && project.imageUrl!.isNotEmpty
+                            ? Image.network(
+                              project.imageUrl!,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (
+                                context,
+                                child,
+                                loadingProgress,
+                              ) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value:
+                                        loadingProgress.expectedTotalBytes !=
+                                                null
+                                            ? loadingProgress
+                                                    .cumulativeBytesLoaded /
+                                                loadingProgress
+                                                    .expectedTotalBytes!
+                                            : null,
+                                    color: colorScheme.primary,
+                                  ),
+                                );
+                              },
+                              errorBuilder:
+                                  (context, error, stackTrace) => Icon(
+                                    Icons.broken_image_rounded,
+                                    size: 40,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                            )
+                            : Icon(
+                              Icons.folder_open_rounded,
                               size: 40,
                               color: colorScheme.onSurfaceVariant,
                             ),
-                          )
-                        : Icon(
-                            Icons.folder_open_rounded,
-                            size: 40,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
                   ),
                 ),
               ),
@@ -883,12 +904,13 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => HomeScreen(
-                              initialLatitude: project.latitude!,
-                              initialLongitude: project.longitude!,
-                              initialProjectName: project.projeAdi,
-                              initialProjectId: project.id,
-                            ),
+                            builder:
+                                (context) => HomeScreen(
+                                  initialLatitude: project.latitude!,
+                                  initialLongitude: project.longitude!,
+                                  initialProjectName: project.projeAdi,
+                                  initialProjectId: project.id,
+                                ),
                           ),
                         );
                       },

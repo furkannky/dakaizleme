@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Make sure this package is added to your pubspec.yaml
-import '../services/ajans_destek_service.dart'; // Adjust path if necessary
-import '../models/ajans_destek.dart'; // Adjust path if necessary
-import 'ajans_destek_add_edit_screen.dart'; // Adjust path if necessary
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../services/ajans_destek_service.dart';
+import '../models/ajans_destek.dart';
+import 'ajans_destek_add_edit_screen.dart';
+import '../models/user_model.dart';
+import '../utils/role_helper.dart';
 
 class AjansDestekDetailScreen extends StatefulWidget {
   final String ajansDestekId;
@@ -99,6 +102,11 @@ class _AjansDestekDetailScreenState extends State<AjansDestekDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final appUser = Provider.of<AppUser?>(context);
+    final bool isAdmin = RoleHelper.isAdmin(appUser?.role);
+    final bool canEdit = RoleHelper.canEdit(appUser?.role);
+    final bool canDelete = RoleHelper.canDelete(appUser?.role);
+
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final TextTheme textTheme = Theme.of(context).textTheme;
 
@@ -188,39 +196,47 @@ class _AjansDestekDetailScreenState extends State<AjansDestekDetailScreen>
         ),
       );
     }
-    
-    
 
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
+        title: Text(
+          'Proje Detayı',
+          style: textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onPrimary,
+          ),
+        ),
         backgroundColor: const Color.fromARGB(255, 8, 49, 70),
-        elevation: 0,
         foregroundColor: colorScheme.onPrimary,
+        elevation: 4,
+        centerTitle: true,
         actions: [
-          IconButton(
-            icon: Icon(Icons.edit_rounded, color: colorScheme.onPrimary),
-            tooltip: 'Düzenle',
-            onPressed: () {
-              Navigator.of(context)
-                  .push(
+          if (canEdit)
+            IconButton(
+              icon: const Icon(Icons.edit_rounded),
+              tooltip: 'Düzenle',
+              onPressed: () {
+                if (_ajansDestek != null) {
+                  Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => AjansDestekAddEditScreen(
                         ajansDestek: _ajansDestek,
                       ),
                     ),
-                  )
-                  .then(
-                    (_) => _loadAjansDestekDetails(),
-                  );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.delete_forever_rounded,
-                color: colorScheme.errorContainer),
-            tooltip: 'Sil',
-            onPressed: () => _confirmAndDelete(context, colorScheme, textTheme),
-          ),
+                  ).then((_) {
+                    // Refresh the details after editing
+                    _loadAjansDestekDetails();
+                  });
+                }
+              },
+            ),
+          if (canDelete)
+            IconButton(
+              icon: const Icon(Icons.delete_rounded),
+              tooltip: 'Sil',
+              onPressed: () => _confirmAndDelete(context, colorScheme, textTheme),
+            ),
         ],
       ),
       body: AnimatedBuilder(
@@ -234,11 +250,11 @@ class _AjansDestekDetailScreenState extends State<AjansDestekDetailScreen>
           ]; */
           return Container(
             decoration: BoxDecoration(
-    gradient: LinearGradient(
-                  colors: [Color.fromARGB(255, 2, 11, 17), Color.fromARGB(255, 47, 116, 172)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+              gradient: LinearGradient(
+                colors: [Color.fromARGB(255, 2, 11, 17), Color.fromARGB(255, 47, 116, 172)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
             child: SingleChildScrollView(
               padding:

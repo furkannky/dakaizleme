@@ -7,16 +7,22 @@ import 'package:dakaizleme/models/ajans_destek.dart';
 import 'package:dakaizleme/services/ajans_destek_service.dart';
 import 'package:dakaizleme/views/project_list_screen.dart';
 import 'package:collection/collection.dart' show IterableExtension;
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dakaizleme/models/user_model.dart';
+import 'package:dakaizleme/views/auth_screen.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:dakaizleme/utils/role_helper.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
   final double? initialLatitude;
   final double? initialLongitude;
   final String?
-  initialProjectName; // Bu parametre artık doğrudan kullanılmayacak ama kalsın
+      initialProjectName; // Bu parametre artık doğrudan kullanılmayacak ama kalsın
   final String?
-  initialProjectId; // <-- YENİ PARAMETRE: Sadece belirli projeyi göstermek için
+      initialProjectId; // <-- YENİ PARAMETRE: Sadece belirli projeyi göstermek için
 
   const HomeScreen({
     super.key,
@@ -71,45 +77,25 @@ class _HomeScreenState extends State<HomeScreen> {
   final Map<String, Color> _markerColors = {
     // Cazibe Merkezleri varyasyonları
     'cazibe merkezleri destekleme programı': Colors.purple,
-    'cazibe merkezi destekleme programı': Colors.purple,
-    'cazibe merkezleri': Colors.purple,
-    'cazibe merkezi': Colors.purple,
-    'cazibe': Colors.purple,
-    
+
     // Çalışan ve Üreten Gençler Programı varyasyonları
     'çalışan ve üreten gençler programı': Colors.blue,
-    'çalışan gençler programı': Colors.blue,
-    'üreten gençler': Colors.blue,
-    'gençler programı': Colors.blue,
-    
+
     // Diğer destek türleri
     'doğrudan faaliyet desteği': Colors.green,
-    'faaliyet desteği': Colors.green,
-    'doğrudan destek': Colors.green,
-    
+
     'finansman desteği': Colors.orange,
-    'finansal destek': Colors.orange,
-    
+
     'fizibilite desteği': Colors.teal,
-    'fizibilite': Colors.teal,
-    
+
     'proje teklif çağrısı': Colors.red,
-    'proje çağrısı': Colors.red,
-    'teklif çağrısı': Colors.red,
-    'proje teklif': Colors.red,
-    
+
     'güdümlü proje desteği': Colors.pinkAccent,
-    'güdümlü proje': Colors.pinkAccent,
-    'güdümlü destek': Colors.pinkAccent,
-    
+
     'sosyal gelişmeyi destekleme programı': Colors.indigo,
-    'sosyal gelişme programı': Colors.indigo,
-    'sosyal destek programı': Colors.indigo,
-    'sosyal gelişme': Colors.indigo,
-    
+
     'teknik destek': Colors.amber,
-    'teknik': Colors.amber,
-    
+
     // Varsayılan
     'diğer': Colors.grey,
   };
@@ -191,9 +177,8 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder:
-                      (context) =>
-                          AjansDestekDetailScreen(ajansDestekId: project.id),
+                  builder: (context) =>
+                      AjansDestekDetailScreen(ajansDestekId: project.id),
                 ),
               );
             },
@@ -210,14 +195,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadMarkersForCity(String cityName) async {
     try {
       if (cityName.isEmpty) return;
-      
+
       // Clear previous markers
       setState(() {
         _markers.clear();
       });
 
       // Check if projects are loaded
-      if (_allAjansDestekleri == null || _allAjansDestekleri.isEmpty) {
+      if (_allAjansDestekleri.isEmpty) { // Null kontrolü kaldırıldı, boş liste kontrolü yeterli
         debugPrint('UYARI: Proje verileri yüklenmedi veya boş');
         return;
       }
@@ -247,12 +232,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 position: LatLng(destek.latitude!, destek.longitude!),
                 infoWindow: InfoWindow(
                   title: destek.projeAdi,
-                  snippet: '${destek.destekTuru} - ${destek.ilce}, ${destek.il}',
+                  snippet:
+                      '${destek.destekTuru} - ${destek.ilce}, ${destek.il}',
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => 
+                        builder: (context) =>
                             AjansDestekDetailScreen(ajansDestekId: destek.id),
                       ),
                     );
@@ -263,7 +249,8 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
         } catch (e) {
-          debugPrint('Hata: ${destek.id} ID li proje için marker oluşturulamadı: $e');
+          debugPrint(
+              'Hata: ${destek.id} ID li proje için marker oluşturulamadı: $e');
         }
       }
 
@@ -277,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('$cityName için projeler yüklenirken hata oluştu'),
-            duration: Duration(seconds: 3),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -288,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _filterBySupportType(String? supportType) {
     debugPrint('\n=== DESTEK TÜRÜNE GÖRE FİLTRELEME BAŞLIYOR ===');
     debugPrint('Seçilen destek türü: "$supportType"');
-    
+
     _selectedSupportType = supportType == 'Tümü' ? null : supportType;
     _markers.clear();
 
@@ -298,7 +285,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final allSupportTypes = <String>{};
 
       for (var destek in _allAjansDestekleri) {
-        supportTypeCounts[destek.destekTuru] = (supportTypeCounts[destek.destekTuru] ?? 0) + 1;
+        supportTypeCounts[destek.destekTuru] =
+            (supportTypeCounts[destek.destekTuru] ?? 0) + 1;
         allSupportTypes.add(destek.destekTuru);
       }
 
@@ -308,7 +296,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ..forEach((type) => debugPrint(' - "$type" (${supportTypeCounts[type]})'));
 
       final normalizedSelectedType = _normalizeSupportType(_selectedSupportType!);
-      debugPrint('\nARANAN NORMALİZE EDİLMİŞ DESTEK TÜRÜ: "$normalizedSelectedType"');
+      debugPrint(
+          '\nARANAN NORMALİZE EDİLMİŞ DESTEK TÜRÜ: "$normalizedSelectedType"');
 
       var filteredProjects = <AjansDestek>[];
       var matchCount = 0;
@@ -317,9 +306,9 @@ class _HomeScreenState extends State<HomeScreen> {
       for (var destek in _allAjansDestekleri) {
         final normalizedDestekTuru = _normalizeSupportType(destek.destekTuru);
         final exactMatch = normalizedDestekTuru == normalizedSelectedType;
-        final partialMatch = normalizedDestekTuru.contains(normalizedSelectedType) || 
-                           normalizedSelectedType.contains(normalizedDestekTuru);
-        
+        final partialMatch = normalizedDestekTuru.contains(normalizedSelectedType) ||
+                             normalizedSelectedType.contains(normalizedDestekTuru);
+
         if (exactMatch || partialMatch) {
           filteredProjects.add(destek);
           matchCount++;
@@ -341,14 +330,14 @@ class _HomeScreenState extends State<HomeScreen> {
               position: LatLng(destek.latitude!, destek.longitude!),
               infoWindow: InfoWindow(
                 title: destek.projeAdi,
-                snippet: '${destek.destekTuru} - ${destek.ilce}, ${destek.il}',
+                snippet:
+                    '${destek.destekTuru} - ${destek.ilce}, ${destek.il}',
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder:
-                          (context) =>
-                              AjansDestekDetailScreen(ajansDestekId: destek.id),
+                      builder: (context) =>
+                          AjansDestekDetailScreen(ajansDestekId: destek.id),
                     ),
                   );
                 },
@@ -371,8 +360,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (filteredProjects.isEmpty) {
         debugPrint('UYARI: "$_selectedSupportType" için hiç proje bulunamadı!');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('"$_selectedSupportType" için proje bulunamadı.'),
+          const SnackBar(
+            content: Text('Bu filtreye uygun proje bulunamadı.'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -406,21 +395,22 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Arama terimine uyan projeleri filtrele
-    var results =
-        _allAjansDestekleri
-            .where(
-              (d) =>
-                  d.projeAdi.toLowerCase().contains(query.toLowerCase()) ||
-                  d.il.toLowerCase().contains(query.toLowerCase()) ||
-                  d.ilce.toLowerCase().contains(query.toLowerCase()) ||
-                  d.destekTuru.toLowerCase().contains(query.toLowerCase()),
-            )
-            .toList();
+    var results = _allAjansDestekleri
+        .where(
+          (d) =>
+              d.projeAdi.toLowerCase().contains(query.toLowerCase()) ||
+              d.il.toLowerCase().contains(query.toLowerCase()) ||
+              d.ilce.toLowerCase().contains(query.toLowerCase()) ||
+              d.destekTuru.toLowerCase().contains(query.toLowerCase()),
+        )
+        .toList();
 
     // Destek türüne göre filtrele (eğer seçiliyse)
     if (_selectedSupportType != null && _selectedSupportType != 'Tümü') {
-      results =
-          results.where((d) => d.destekTuru == _selectedSupportType).toList();
+      final normalizedSelectedType = _normalizeSupportType(_selectedSupportType!);
+      results = results.where(
+        (d) => _normalizeSupportType(d.destekTuru) == normalizedSelectedType,
+      ).toList();
     }
 
     // Eğer sadece bir il arandıysa, şehir olarak kaydet
@@ -448,9 +438,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder:
-                        (context) =>
-                            AjansDestekDetailScreen(ajansDestekId: destek.id),
+                    builder: (context) =>
+                        AjansDestekDetailScreen(ajansDestekId: destek.id),
                   ),
                 );
               },
@@ -509,10 +498,9 @@ class _HomeScreenState extends State<HomeScreen> {
       final bool isSpecialProvince = _specialProvinceColors.containsKey(
         provinceName,
       );
-      final Color provinceColor =
-          isSpecialProvince
-              ? _specialProvinceColors[provinceName]!
-              : Colors.blue;
+      final Color provinceColor = isSpecialProvince
+          ? _specialProvinceColors[provinceName]!
+          : Colors.blue;
 
       final Polygon polygon = Polygon(
         polygonId: PolygonId(provinceName),
@@ -520,9 +508,7 @@ class _HomeScreenState extends State<HomeScreen> {
         strokeWidth: isSpecialProvince ? 3 : 2, // Özel illerde daha kalın çizgi
         strokeColor: provinceColor,
         fillColor:
-            isSpecialProvince
-                ? provinceColor.withOpacity(0.3) // Özel illerde daha koyu dolgu
-                : Colors.blue.withOpacity(0.2),
+            isSpecialProvince ? provinceColor.withOpacity(0.3) : Colors.blue.withOpacity(0.2), // Özel illerde daha koyu dolgu
         consumeTapEvents: true,
         onTap: () {
           setState(() {
@@ -577,13 +563,13 @@ class _HomeScreenState extends State<HomeScreen> {
   // - Yaygın varyasyonları standartlaştırır
   String _normalizeSupportType(String supportType) {
     if (supportType.isEmpty) return '';
-    
+
     // Önce temizleme
     String normalized = supportType
         .trim()
         .toLowerCase()
         .replaceAll(RegExp(r'\s+'), ' '); // Çoklu boşlukları tek boşluğa indirge
-    
+
     // Türkçe karakterleri değiştir
     normalized = normalized
         .replaceAll('ı', 'i')
@@ -592,7 +578,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .replaceAll('ş', 's')
         .replaceAll('ö', 'o')
         .replaceAll('ç', 'c');
-    
+
     // Yaygın varyasyonları standartlaştır
     final variations = <String, String>{
       'cazibe merkez': 'cazibe merkezleri',
@@ -604,7 +590,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'proje teklif cagri': 'proje teklif cagrisi',
       'ptc': 'proje teklif cagrisi',
     };
-    
+
     // Varyasyon kontrolü yap
     for (final entry in variations.entries) {
       if (normalized.contains(entry.key)) {
@@ -612,7 +598,7 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       }
     }
-    
+
     debugPrint('Normalize edilen destek türü: "$supportType" -> "$normalized"');
     return normalized;
   }
@@ -647,7 +633,8 @@ class _HomeScreenState extends State<HomeScreen> {
     // Özel eşleştirmeleri kontrol et
     for (final entry in specialMappings.entries) {
       if (normalizedType.contains(entry.key)) {
-        debugPrint('✅ ÖZEL EŞLEŞME: "$supportType" -> "${entry.key}" -> ${entry.value}');
+        debugPrint(
+            '✅ ÖZEL EŞLEŞME: "$supportType" -> "${entry.key}" -> ${entry.value}');
         try {
           final hsvColor = HSVColor.fromColor(entry.value);
           return BitmapDescriptor.defaultMarkerWithHue(hsvColor.hue);
@@ -660,7 +647,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Eğer özel eşleşme yoksa, normal eşleştirme yap
     debugPrint('Özel eşleşme bulunamadı, normal eşleştirme yapılıyor...');
-    
+
     // Try to find a matching color (case-insensitive and trimmed)
     String? matchedKey;
     Color? color;
@@ -669,7 +656,7 @@ class _HomeScreenState extends State<HomeScreen> {
     for (var entry in _markerColors.entries) {
       final normalizedEntryKey = _normalizeSupportType(entry.key);
       debugPrint('  Kontrol edilen anahtar: "${entry.key}" -> "$normalizedEntryKey"');
-      
+
       if (normalizedEntryKey == normalizedType) {
         matchedKey = entry.key;
         color = entry.value;
@@ -683,7 +670,7 @@ class _HomeScreenState extends State<HomeScreen> {
       debugPrint('Tam eşleşme bulunamadı, kısmi eşleşme aranıyor...');
       for (var entry in _markerColors.entries) {
         final normalizedEntryKey = _normalizeSupportType(entry.key);
-        if (normalizedType.contains(normalizedEntryKey) || 
+        if (normalizedType.contains(normalizedEntryKey) ||
             normalizedEntryKey.contains(normalizedType)) {
           matchedKey = entry.key;
           color = entry.value;
@@ -695,7 +682,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // If no match found, use the default 'Diğer' color
     if (color == null) {
-      debugPrint('UYARI: "$supportType" için eşleşen renk bulunamadı. Varsayılan renk kullanılıyor.');
+      debugPrint(
+          'UYARI: "$supportType" için eşleşen renk bulunamadı. Varsayılan renk kullanılıyor.');
       color = _markerColors['diğer'] ?? Colors.grey;
     }
 
@@ -711,19 +699,61 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Çıkış işlemi için onay kutusu göster
+  Future<void> _confirmSignOut() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Çıkış Yap'),
+        content: const Text('Çıkış yapmak istediğinize emin misiniz?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('İptal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Çıkış Yap'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true && mounted) {
+      _signOut();
+    }
+  }
+
+  // Çıkış işlevi
+  Future<void> _signOut() async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const AuthScreen()),
+        (Route<dynamic> route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final appUser = Provider.of<AppUser?>(context);
+    final bool isAdmin = RoleHelper.isAdmin(appUser?.role);
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Ajans Destek Haritası',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onPrimary,
+          ),
         ),
         backgroundColor: const Color.fromARGB(255, 8, 49, 70),
-
         foregroundColor: colorScheme.onPrimary,
+        elevation: 4,
         centerTitle: true,
         actions: [
           IconButton(
@@ -736,6 +766,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
             },
+          ),
+          if (isAdmin)
+            IconButton(
+              icon: const Icon(Icons.add_rounded),
+              tooltip: 'Yeni Proje Ekle',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const AjansDestekAddEditScreen(),
+                  ),
+                );
+              },
+            ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Çıkış Yap',
+            onPressed: _confirmSignOut, // Güncellenmiş çıkış işlevi
           ),
         ],
       ),
@@ -794,16 +841,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           value: _selectedSupportType ?? 'Tümü',
                           isExpanded: true,
                           hint: const Text('Destek Türü Seçiniz'),
-                          items:
-                              _supportTypes.map((String value) {
-                                return DropdownMenuItem<String>(
-                                  value: value,
-                                  child: Text(
-                                    value,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                );
-                              }).toList(),
+                          items: _supportTypes.map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(
+                                value,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
                           onChanged: (String? newValue) {
                             _filterBySupportType(newValue);
                           },
@@ -823,8 +869,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           Colors.grey)
                                       .withOpacity(0.2),
                               labelStyle: TextStyle(
-                                color:
-                                    _markerColors[_selectedSupportType] ??
+                                color: _markerColors[_selectedSupportType] ??
                                     Colors.grey,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -882,9 +927,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               p.longitude == widget.initialLongitude,
                         );
                         if (selectedProject != null) {
-                          final polygonToZoom =
-                              _provincePolygonsMap[selectedProject.il
-                                  .toLowerCase()];
+                          final polygonToZoom = _provincePolygonsMap[
+                              selectedProject.il.toLowerCase()];
                           if (polygonToZoom != null) {
                             _zoomToPolygon(polygonToZoom.points);
                           } else {
@@ -997,29 +1041,28 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children:
-                            _markerColors.entries.map((e) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 2,
+                        children: _markerColors.entries.map((e) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 2,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  color: e.value,
+                                  size: 20,
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.location_on,
-                                      color: e.value,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      e.key,
-                                      style: const TextStyle(fontSize: 13),
-                                    ),
-                                  ],
+                                const SizedBox(width: 6),
+                                Text(
+                                  e.key,
+                                  style: const TextStyle(fontSize: 13),
                                 ),
-                              );
-                            }).toList(),
+                              ],
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ),
                   ),
@@ -1036,24 +1079,28 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: 50,
-                  height: 50,
-                  child: FloatingActionButton(
-                    heroTag: 'addProject',
-                    backgroundColor: Colors.green,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => const AjansDestekAddEditScreen(),
-                        ),
-                      );
-                    },
-                    child: const Icon(Icons.add, size: 40),
-                  ),
-                ),
+                // Admin rolündeyse "Ekle" butonunu göster
+                if (isAdmin)
+                  SizedBox(
+                    width: 50,
+                    height: 50,
+                    child: FloatingActionButton(
+                      heroTag: 'addProject',
+                      backgroundColor: Colors.green,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const AjansDestekAddEditScreen(),
+                          ),
+                        );
+                      },
+                      child: const Icon(Icons.add, size: 40),
+                    ),
+                  )
+                else
+                  const SizedBox.shrink(), // Admin değilse boş bir kutu göster
                 const SizedBox(height: 12),
                 SizedBox(
                   width: 50,
@@ -1063,10 +1110,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     backgroundColor: Colors.blueAccent,
                     onPressed: () {
                       setState(() {
-                        _currentMapType =
-                            _currentMapType == MapType.normal
-                                ? MapType.hybrid
-                                : MapType.normal;
+                        _currentMapType = _currentMapType == MapType.normal
+                            ? MapType.hybrid
+                            : MapType.normal;
                       });
                     },
                     child: const Icon(Icons.layers, size: 38),

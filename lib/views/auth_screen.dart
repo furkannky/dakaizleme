@@ -1,7 +1,9 @@
+// lib/views/auth_screen.dart
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // FirebaseAuth'ı import etmeyi unutmayın
 import '../services/auth_service.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart'; // Animasyonlar için
+import 'package:dakaizleme/views/home_screen.dart'; // HomeScreen'i import ettiğinizden emin olun
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -14,8 +16,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   final AuthService _authService = AuthService();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  
-  // _isLogin değişkenini kaldırdık, çünkü artık sadece giriş yapacağız.
+
   String? _errorMessage;
   bool _isLoadingAuth = false; // Kimlik doğrulama işlemi için yükleme durumu
 
@@ -52,20 +53,49 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   Future<void> _submitAuthForm() async {
     setState(() {
       _errorMessage = null;
-      _isLoadingAuth = true; // Yükleme durumunu başlat
+      _isLoadingAuth = true; // Start loading
     });
+
     try {
-      // Sadece signInWithEmail fonksiyonunu çağırıyoruz, _isLogin kontrolüne gerek yok.
+      print('AuthScreen: Giriş işlemi başlatılıyor...');
       await _authService.signInWithEmail(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
-      // Başarılı olursa yükleme durumunu kapat. main.dart yönlendirmeyi halledecek.
-      if (mounted) {
+      print('AuthScreen: AuthService.signInWithEmail tamamlandı.');
+
+      // Giriş başarılı olduktan hemen sonra Firebase'in mevcut kullanıcısını kontrol edelim
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        print('AuthScreen: Giriş başarılı! Mevcut kullanıcı UID: ${currentUser.uid}');
+        print('AuthScreen: Kullanıcıyı HomeScreen\'e yönlendiriliyor.');
+        // Kullanıcıyı direkt olarak HomeScreen'e yönlendirelim.
+        // main.dart'taki StreamBuilder doğru çalışana kadar bu geçici bir çözüm olabilir.
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            (Route<dynamic> route) => false, // Tüm yığını temizle
+          );
+        }
+      } else {
+        print('AuthScreen: Giriş başarılı oldu ancak FirebaseAuth.currentUser null! Bu beklenmedik bir durum.');
+        // Bu durum beklenmez, ancak olursa hata mesajı gösterelim
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Giriş başarılı ancak oturum bilgisi alınamadı. Lütfen uygulamayı yeniden başlatın.';
+            _isLoadingAuth = false;
+          });
+        }
+      }
+
+      // Yükleme durumunu kapat. Yönlendirme zaten yapıldıysa bu setState tetiklenmeyebilir.
+      // Ancak hata durumları için bu satır önemli.
+      if (mounted && _isLoadingAuth) { // Sadece hala yükleniyorsa setState yap
         setState(() {
           _isLoadingAuth = false;
         });
       }
+
     } on FirebaseAuthException catch (e) {
       String message = 'Bir hata oluştu, lütfen tekrar deneyin.';
       if (e.code == 'user-not-found' || e.code == 'invalid-credential') {
@@ -77,17 +107,19 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       } else if (e.code == 'invalid-email') {
         message = 'Geçersiz e-posta formatı.';
       }
+      print('AuthScreen: FirebaseAuthException hata kodu: ${e.code}, mesaj: $message');
       if (mounted) {
         setState(() {
           _errorMessage = message;
-          _isLoadingAuth = false; // Yükleme durumunu kapat
+          _isLoadingAuth = false;
         });
       }
     } catch (e) {
+      print('AuthScreen: Bilinmeyen bir hata oluştu: $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Bilinmeyen bir hata oluştu: $e';
-          _isLoadingAuth = false; // Yükleme durumunu kapat
+          _isLoadingAuth = false;
         });
       }
     }
@@ -98,16 +130,6 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final TextTheme textTheme = Theme.of(context).textTheme;
 
-    // Gradyan renkleri (tema renklerinden türetildi)
-    final List<Color> gradientColors1 = [
-      colorScheme.primary.withOpacity(0.9),
-      colorScheme.tertiary.withOpacity(0.9),
-    ];
-    final List<Color> gradientColors2 = [
-      colorScheme.tertiary.withOpacity(0.9),
-      colorScheme.secondary.withOpacity(0.9),
-    ];
-
     return Scaffold(
       resizeToAvoidBottomInset: true, // Klavye açıldığında içeriği kaydır
       body: AnimatedBuilder(
@@ -116,7 +138,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           return Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
+                colors: const [
                   Color.fromARGB(255, 2, 11, 17),
                   Color.fromARGB(255, 47, 116, 172),
                 ],
@@ -141,8 +163,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                             child: Column(
                               children: [
                                 Icon(
-                                  Icons
-                                      .location_city_rounded, // Uygulama ikonunuz
+                                  Icons.location_city_rounded, // Uygulama ikonunuz
                                   size: 100,
                                   color: colorScheme.onPrimary,
                                 ),
@@ -318,9 +339,9 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                                   double.infinity,
                                   56,
                                 ), // Daha büyük buton
-                                
-                                backgroundColor:Color.fromARGB(255, 12, 12, 67),
-                                foregroundColor: Color.fromARGB(255, 9, 9, 62),
+
+                                backgroundColor: const Color.fromARGB(255, 12, 12, 67),
+                                foregroundColor: const Color.fromARGB(255, 9, 9, 62), // Bu renk genellikle onPressed ile birlikte kullanılır
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
