@@ -86,6 +86,7 @@ flutter:
     - assets/
     - assets/geo/tr.json
     - assets/geo/local.json
+    - assets/dakaappimages/
 
   #   - images/a_dot_ham.jpeg
 
