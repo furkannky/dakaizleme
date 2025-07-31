@@ -71,29 +71,37 @@ DAKA İzleme Uygulaması, Doğu Anadolu Kalkınma Ajansı (DAKA) bünyesinde yü
 
 <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
   <div style="text-align: center;">
-    <img src="assets/dakaappimages/login_screen.png" alt="Giriş Ekranı" width="200">
+    <img src="assets/dakaappimages/login.png" alt="Giriş Ekranı" width="200">
     <p>Giriş Ekranı</p>
   </div>
   <div style="text-align: center;">
-    <img src="assets/dakaappimages/home_screen.png" alt="Ana Ekran" width="200">
+    <img src="assets/dakaappimages/home.png" alt="Ana Ekran" width="200">
+    <p>Ana Ekran</p>
+  </div>
+    <div style="text-align: center;">
+    <img src="assets/dakaappimages/home2.png" alt="Ana Ekran" width="200">
+    <p>Ana Ekran</p>
+  </div>
+    <div style="text-align: center;">
+    <img src="assets/dakaappimages/home3.png" alt="Ana Ekran" width="200">
+    <p>Ana Ekran</p>
+  </div>
+    <div style="text-align: center;">
+    <img src="assets/dakaappimages/home5.png" alt="Ana Ekran" width="200">
     <p>Ana Ekran</p>
   </div>
   <div style="text-align: center;">
-    <img src="assets/dakaappimages/project_list.png" alt="Proje Listesi" width="200">
+    <img src="assets/dakaappimages/projectlist.png" alt="Proje Listesi" width="200">
     <p>Proje Listesi</p>
-  </div>
   <div style="text-align: center;">
-    <img src="assets/dakaappimages/project_detail.png" alt="Proje Detayı" width="200">
-    <p>Proje Detayı</p>
-  </div>
-  <div style="text-align: center;">
-    <img src="assets/dakaappimages/filter_screen.png" alt="Filtreleme Ekranı" width="200">
+    <img src="assets/dakaappimages/filter.png" alt="Filtreleme Ekranı" width="200">
     <p>Filtreleme Ekranı</p>
   </div>
   <div style="text-align: center;">
-    <img src="assets/dakaappimages/admin_panel.png" alt="Yönetici Paneli" width="200">
-    <p>Yönetici Paneli</p>
+    <img src="assets/dakaappimages/detail.png" alt="Proje Detayı" width="200">
+    <p>Proje Detayı</p>
   </div>
+
 </div>
 
 ## 📄 Lisans
