@@ -1,38 +1,114 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Dakika İzleme Uygulaması">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Content-Security-Policy" 
+      content="default-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://*.google.com https://*.gstatic.com data: gap: https://ssl.gstatic.com 'unsafe-inline' 'unsafe-eval'; 
+               connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://*.google.com https://*.gstatic.com; 
+               media-src *; 
+               img-src 'self' data: content: https: http: blob:; 
+               style-src 'self' 'unsafe-inline' https:; 
+               script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:;">
+               <meta http-equiv="Content-Security-Policy" 
+    content="default-src 'self' https:; 
+             script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; 
+             style-src 'self' 'unsafe-inline' https:;
+             img-src 'self' data: https: http: blob:;
+             font-src 'self' https: data:;
+             connect-src 'self' https: wss:;
+             media-src *;
+             object-src 'self' blob:;
+             frame-src 'self' https:;
+             download *;">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="dakaizleme">
+  <meta name="apple-mobile-web-app-title" content="Dakika İzleme">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>dakaizleme</title>
+  <title>Dakika İzleme</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  
+  <!-- Google Maps API -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCXmvXTvaU-ys9i79H1nqBRmlvMIzi_1XM&libraries=places"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    #flutter_splash {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #ffffff;
+    }
+    .splash-logo {
+      width: 150px;
+      height: 150px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+  </style>
 </head>
 <body>
+  <div id="flutter_splash">
+    <img src="splash_logo.png" class="splash-logo" alt="Loading...">
+  </div>
+  <script>
+    // Firebase configuration - Bu kısmı kendi Firebase ayarlarınızla değiştirin
+    const firebaseConfig = {
+  apiKey: "AIzaSyAcvztyMvM2es9y1gFnX7RW54TyqfLc3L8",
+  authDomain: "daka-izleme.firebaseapp.com",
+  databaseURL: "https://daka-izleme-default-rtdb.firebaseio.com",
+  projectId: "daka-izleme",
+  storageBucket: "daka-izleme.firebasestorage.app",
+  messagingSenderId: "775487623656",
+  appId: "1:775487623656:web:1c7b7d977a70520321945d"
+};
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Flutter web yükleme ekranı
+    window.addEventListener('load', function(ev) {
+      // Flutter web yüklendikten sonra splash ekranını kaldır
+      setTimeout(function() {
+        const splash = document.getElementById('flutter_splash');
+        if (splash) {
+          splash.style.display = 'none';
+        }
+      }, 2000);
+    });
+  </script>
+  
+  <!-- Flutter web scripti -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
