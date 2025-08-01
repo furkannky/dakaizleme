@@ -1,35 +1,44 @@
 {
-    "name": "dakaizleme",
-    "short_name": "dakaizleme",
+    "name": "Dakika İzleme",
+    "short_name": "Dakika İzleme",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Dakika İzleme Uygulaması",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
         {
-            "src": "icons/Icon-192.png",
+            "src": "icons/icon-192.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "icons/Icon-512.png",
+            "src": "icons/icon-512.png",
             "sizes": "512x512",
             "type": "image/png"
         },
         {
-            "src": "icons/Icon-maskable-192.png",
+            "src": "icons/icon-maskable-192.png",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "maskable"
         },
         {
-            "src": "icons/Icon-maskable-512.png",
+            "src": "icons/icon-maskable-512.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "screenshots/screenshot1.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "platform": "wide",
+            "label": "Ana Ekran Görünümü"
         }
     ]
 }
