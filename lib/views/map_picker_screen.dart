@@ -23,7 +23,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   LatLng? _pickedLocation;
   Set<Marker> _markers = {};
   GoogleMapController? _mapController;
-  MapType _currentMapType = MapType.normal;
+  MapType _currentMapType = MapType.satellite;
   bool _isMapReady = false;
   String? _errorMessage;
 
@@ -89,14 +89,43 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         setState(() {
           _pickedLocation = const LatLng(38.80, 40.00); // Türkiye ortası
           _addMarker(_pickedLocation!);
-          _errorMessage = 'Mevcut konum alınamadı, varsayılan konum kullanılıyor';
+          _errorMessage =
+              'Mevcut konum alınamadı, varsayılan konum kullanılıyor';
         });
       }
     }
   }
 
-  void _onMapCreated(GoogleMapController controller) {
+  Future<void> _onMapCreated(GoogleMapController controller) async {
     _mapController = controller;
+    
+    // Harita stilini ayarla (daha net görüntü için)
+    await controller.setMapStyle('''
+      [
+        {
+          "featureType": "all",
+          "elementType": "all",
+          "stylers": [
+            {"saturation": -100},
+            {"gamma": 1.0},
+            {"lightness": 0.5}
+          ]
+        }
+      ]
+    ''');
+
+    if (_pickedLocation != null) {
+      controller.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: _pickedLocation!,
+            zoom: 18.0, // Daha yüksek zoom seviyesi
+            tilt: 45.0, // 3D etkisi için hafif açı
+            bearing: 0.0
+          ),
+        ),
+      );
+    }
   }
 
   void _selectLocation(LatLng position) {
@@ -117,8 +146,6 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       ),
     );
   }
-
-
 
   // Map type names in Turkish
   final Map<MapType, String> _mapTypeNames = {
@@ -163,18 +190,23 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                       });
                     }
                   },
-                  items: _mapTypeNames.entries.map<DropdownMenuItem<MapType>>((entry) {
-                    return DropdownMenuItem<MapType>(
-                      value: entry.key,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text(
-                          entry.value,
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                  items:
+                      _mapTypeNames.entries.map<DropdownMenuItem<MapType>>((
+                        entry,
+                      ) {
+                        return DropdownMenuItem<MapType>(
+                          value: entry.key,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0,
+                            ),
+                            child: Text(
+                              entry.value,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                        );
+                      }).toList(),
                 ),
               ),
             ),
@@ -185,11 +217,12 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             child: IconButton(
               icon: const Icon(Icons.check_circle, size: 28),
               tooltip: 'Konumu se',
-              onPressed: _pickedLocation == null
-                  ? null
-                  : () {
-                      Navigator.of(context).pop(_pickedLocation);
-                    },
+              onPressed:
+                  _pickedLocation == null
+                      ? null
+                      : () {
+                        Navigator.of(context).pop(_pickedLocation);
+                      },
             ),
           ),
         ],
@@ -200,8 +233,15 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             GoogleMap(
               initialCameraPosition: CameraPosition(
                 target: _pickedLocation ?? const LatLng(38.80, 40.00), // Türkiye ortası
-                zoom: 6.0,
+                zoom: 18.0, // Daha yüksek başlangıç zoom seviyesi
+                tilt: 45.0, // 3D etkisi için hafif açı
+                bearing: 0.0
               ),
+              zoomControlsEnabled: true,
+              zoomGesturesEnabled: true,
+              buildingsEnabled: true,
+              rotateGesturesEnabled: true,
+              tiltGesturesEnabled: true,
               onMapCreated: (controller) {
                 _mapController = controller;
                 _onMapCreated(controller);
@@ -219,7 +259,11 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       _errorMessage!,
@@ -241,7 +285,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                   ],
                 ),
               ),
-            )
+            ),
           ] else ...[
             const Center(
               child: Column(
@@ -252,7 +296,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                   Text('Harita yükleniyor...'),
                 ],
               ),
-            )
+            ),
           ],
           if (_pickedLocation == null)
             const Positioned(
