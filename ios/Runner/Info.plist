@@ -45,5 +45,13 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>İlanlara fotoğraf ekleyebilmek için kameraya erişim gerekiyor</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>İlanlara fotoğraf ekleyebilmek için galeriye erişim gerekiyor</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Harita üzerinde konumunuzu gösterebilmek için konum bilgisine ihtiyaç duyulmaktadır</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Uygulama arka planda çalışırken konum bilgisine ihtiyaç duyulmaktadır</string>
 </dict>
 </plist>
